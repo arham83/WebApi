@@ -1,0 +1,45 @@
+﻿builder.Services.AddHttpLogging(logging =>
+{
+    // Customize HTTP logging here.
+    logging.LoggingFields = HttpLoggingFields.All;
+    logging.RequestHeaders.Add("sec-ch-ua");
+    //logging.ResponseHeaders.Add("my-response-header");
+    logging.MediaTypeOptions.AddText("application/javascript");
+    logging.RequestBodyLogLimit = 4096;
+    logging.ResponseBodyLogLimit = 4096;
+
+});
+app.UseHttpLogging();
+
+      "LogFilePath": "Logs\\log.txt"
+var loggerFactory = app.Services.GetService<ILoggerFactory>();
+loggerFactory.AddFile(builder.Configuration["Logging:LogFileConfiguration:LogFilePath"].ToString());
+
+
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate = "Request: {RequestMethod} {RequestPath} {RequestProtocol} - {TimeTaken} ms";
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        var userName = httpContext.User?.Identity?.Name;
+        var timeTaken = httpContext.Items["ElapsedTime"];
+
+        diagnosticContext.Set("Username", userName);
+        diagnosticContext.Set("RequestMethod", httpContext.Request.Method);
+        diagnosticContext.Set("RequestPath", httpContext.Request.Path);
+        diagnosticContext.Set("RequestProtocol", httpContext.Request.Protocol);
+        diagnosticContext.Set("TimeTaken", timeTaken);
+    };
+});
+
+*********************************************************************************************************************
+/*
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.File(@"D:\Users\ariaz\Desktop\LogFiles\log.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Logging.ClearProviders();
+builder.Logging.AddSerilog();
+*/
